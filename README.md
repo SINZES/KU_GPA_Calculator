@@ -10,7 +10,7 @@
 - 💾 데이터 백업/복원 및 CSV 관리
 
 ## 🚀 사용법
-1. [앱 링크](https://ku-gpa-calculator-sinzes.streamlit.app) 접속
+1. [앱 링크](https://ku-gpa-calculator.streamlit.app/) 접속
 2. 과목 정보 입력
 3. 계산하기 버튼 클릭
 4. 결과 확인
