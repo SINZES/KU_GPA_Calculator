@@ -1,4 +1,3 @@
-# KU_GPA_Calculator
 # 🎓 KU 학점 & GPA 계산기
 
 고려대학교 재학생을 위한 종합 학점 관리 시스템
