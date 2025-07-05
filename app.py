@@ -508,6 +508,23 @@ def safe_filter_courses(df):
         st.warning(f"과목 필터링 중 오류: {str(e)}")
         return pd.DataFrame()
     
+def validate_retake_status(df):
+    """재수강 상태 검증 및 자동 수정"""
+    if df.empty:
+        return df
+    
+    # 빈 과목명인 행의 재수강 체크박스를 False로 설정
+    empty_course_mask = (
+        df["과목명"].isna() | 
+        (df["과목명"].astype(str).str.strip() == "")
+    )
+    
+    # 빈 과목명인 행의 재수강을 False로 강제 설정
+    if empty_course_mask.any():
+        df.loc[empty_course_mask, "재수강"] = False
+    
+    return df
+    
 def safe_data_operation(operation_func, error_message="작업 중 오류가 발생했습니다"):
     """안전한 데이터 작업 래퍼 함수 - 구체적인 예외 처리"""
     try:
@@ -823,6 +840,9 @@ def update_courses():
             deleted = st.session_state.courses_editor.get("deleted_rows", [])
             if deleted:
                 st.session_state.courses = st.session_state.courses.drop(deleted).reset_index(drop=True)
+            
+            # ✅ 재수강 상태 검증 및 자동 수정 추가
+            st.session_state.courses = validate_retake_status(st.session_state.courses)
     
     safe_execute(_update, "데이터 업데이트 중 오류가 발생했습니다")
 
@@ -846,7 +866,10 @@ def _add_row() -> None:
         "학기": TERM_OPTIONS[0],
         "재수강": False,
     }
-    st.session_state.courses = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+    new_df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+    
+    # ✅ 재수강 상태 검증 적용
+    st.session_state.courses = validate_retake_status(new_df)
 
 def _del_row() -> None:
     if not st.session_state.courses.empty:
@@ -1429,9 +1452,19 @@ class DataIntegrityManagerFixed:
                 return
 
             df = st.session_state.courses
+
+            # ✅ 빈 과목명 필터링 추가
+            # 과목명이 비어있거나 공백만 있는 행은 검증에서 제외
+            valid_courses = df[
+                (df['과목명'].notna()) & 
+                (df['과목명'].astype(str).str.strip() != "")
+            ]
+
+            if valid_courses.empty:
+                return
             
             # 1. 동일 과목명에서 재수강 표시가 없는 중복 확인
-            course_groups = df.groupby('과목명')
+            course_groups = valid_courses.groupby('과목명')
             
             for course_name, group in course_groups:
                 if len(group) > 1:
